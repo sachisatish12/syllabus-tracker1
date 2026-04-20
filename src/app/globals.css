@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+ --primary-red: #ba0c2f;   /* UGA red */
+  --black: #000000;
+  --white: #ffffff;
+  --soft-gray: #f5f5f5;
 }
 
 @theme inline {
@@ -20,7 +22,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--soft-gray);
+  color: var(--black);
+  font-family: system-ui, sans-serif;
 }
