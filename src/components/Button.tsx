@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 type ButtonProps = {
   text: string;
   variant?: "primary" | "secondary";
@@ -13,12 +11,13 @@ export default function Button({
   variant = "primary",
   onClick,
 }: ButtonProps) {
-  const base = "px-6 py-2 rounded-lg font-medium transition";
+  const base =
+    "px-6 py-2 rounded-xl font-medium transition duration-200";
 
   const styles =
     variant === "primary"
-      ? "bg-blue-600 text-white hover:bg-blue-700"
-      : "bg-gray-200 text-black hover:bg-gray-300";
+      ? "bg-red-600 text-white hover:bg-red-700"
+      : "bg-black text-white hover:bg-gray-900";
 
   return (
     <button className={`${base} ${styles}`} onClick={onClick}>

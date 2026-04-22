@@ -1,194 +1,124 @@
 "use client";
 
 import { useState } from "react";
+import Sidebar from "@/components/Sidebar";
+import AISyllabusParser from "@/components/AISyllabusParser";
+import GradeGoalPredictor from "@/components/GradeGoalPredictor";
+import ProgressBar from "@/components/ProgressBar";
+
+type ClassType = {
+  className: string;
+  teacher: string;
+  assignments: any[];
+};
 
 export default function Dashboard() {
-  const [classes, setClasses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<ClassType[]>([]);
 
-  // CLASS INFO
-  const [className, setClassName] = useState("");
-  const [teacher, setTeacher] = useState("");
-
-  // ASSIGNMENT INFO
-  const [assignment, setAssignment] = useState("");
-  const [weight, setWeight] = useState("");
-  const [date, setDate] = useState("");
-
-  function addClass() {
-    if (!className || !teacher) return;
-
-    const newClass = {
-      className,
-      teacher,
-      assignments: assignment
-        ? [{ assignment, weight, date }]
-        : [],
-      officeHours: "",
-    };
-
-    setClasses([...classes, newClass]);
-
-    setClassName("");
-    setTeacher("");
-    setAssignment("");
-    setWeight("");
-    setDate("");
+  function handleParsed(data: any) {
+    setClasses((prev) => [...prev, data]);
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-gradient-to-b from-white via-red-50 to-white">
 
       {/* SIDEBAR */}
-      <div className="w-64 bg-black text-white p-6">
-        <h1 className="text-xl font-bold text-red-500 mb-6">
-          🎓 Syllabus Tracker
-        </h1>
+      <Sidebar />
 
-        <div className="space-y-3 text-sm">
-          <p>Dashboard</p>
-          <p>Classes</p>
-          <p>Office Hours</p>
+      {/* MAIN CONTENT */}
+      <div className="flex-1 p-6">
+
+        {/* HEADER */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-black">
+            Dashboard
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Track your classes, grades, and deadlines in one place.
+          </p>
         </div>
-      </div>
 
-      {/* MAIN */}
-      <div className="flex-1 p-8">
+        {/* LAYOUT GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <h2 className="text-3xl font-bold mb-6">
-          Your Dashboard 📊
-        </h2>
+          {/* LEFT / MAIN COLUMN */}
+          <div className="lg:col-span-2 space-y-6">
 
-        {/* ADD CLASS CARD */}
-        <div className="bg-white p-6 rounded-xl shadow border mb-8">
+            {/* AI SYLLABUS PARSER */}
+            <div className="bg-white/80 backdrop-blur-md border rounded-2xl p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-red-600 mb-3">
+                AI Syllabus Parser
+              </h2>
 
-          <h3 className="font-semibold text-red-600 mb-4">
-            Add Class
-          </h3>
+              <AISyllabusParser onParsed={handleParsed} />
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            {/* CLASS CARDS */}
+            <div className="space-y-4">
 
-            <input
-              className="border p-2 rounded"
-              placeholder="Class Name"
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-            />
+              <h2 className="text-lg font-semibold text-black">
+                Your Classes
+              </h2>
 
-            <input
-              className="border p-2 rounded"
-              placeholder="Professor Name"
-              value={teacher}
-              onChange={(e) => setTeacher(e.target.value)}
-            />
+              {classes.length === 0 ? (
+                <div className="text-gray-400 text-sm">
+                  No classes yet. Paste a syllabus to get started.
+                </div>
+              ) : (
+                classes.map((c, i) => (
+                  <div
+                    key={i}
+                    className="bg-white/80 backdrop-blur-md border rounded-2xl p-5 shadow-sm hover:shadow-md transition"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold text-black">
+                        {c.className || "Untitled Class"}
+                      </h3>
+                    </div>
 
-            <input
-              className="border p-2 rounded"
-              placeholder="Assignment (optional)"
-              value={assignment}
-              onChange={(e) => setAssignment(e.target.value)}
-            />
+                    <p className="text-sm text-gray-500 mb-3">
+                      {c.teacher || "Unknown Instructor"}
+                    </p>
 
-            <input
-              className="border p-2 rounded"
-              placeholder="Weight %"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-            />
+                    <ProgressBar value={70} />
 
-            {/* DATE OPTIONAL (CLEARLY LABELED) */}
-            <div className="col-span-2">
-              <input
-                className="border p-2 rounded w-full"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Date is optional — leave blank if not applicable
-              </p>
+                  </div>
+                ))
+              )}
             </div>
 
           </div>
 
-          <button
-            onClick={addClass}
-            className="mt-4 bg-red-600 text-white px-5 py-2 rounded hover:bg-red-700"
-          >
-            Add Class
-          </button>
-        </div>
+          {/* RIGHT PANEL */}
+          <div className="space-y-6">
 
-        {/* OFFICE HOURS SECTION (SEPARATE CARDS) */}
-        <h3 className="text-xl font-semibold mb-3">
-          Office Hours 🕒
-        </h3>
+            {/* GRADE PREDICTOR */}
+            <div className="bg-white/80 backdrop-blur-md border rounded-2xl p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-red-600 mb-3">
+                Grade Predictor
+              </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          {classes.map((c, i) => (
-            <div
-              key={i}
-              className="bg-white border rounded-xl p-5 shadow-sm"
-            >
-              <p className="font-bold">{c.className}</p>
-              <p className="text-gray-600 text-sm">
-                Prof. {c.teacher}
-              </p>
-
-              <p className="mt-3 text-blue-700 font-medium">
-                Office Hours: Not set yet
-              </p>
+              <GradeGoalPredictor current={85} />
             </div>
-          ))}
 
-        </div>
+            {/* QUICK STATS */}
+            <div className="bg-white/80 backdrop-blur-md border rounded-2xl p-5 shadow-sm">
 
-        {/* ASSIGNMENTS SECTION */}
-        <h3 className="text-xl font-semibold mt-8 mb-3">
-          Assignments 📚
-        </h3>
+              <h2 className="text-lg font-semibold text-black mb-3">
+                Overview
+              </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 text-sm text-gray-600">
 
-          {classes.map((c, i) => (
-            <div
-              key={i}
-              className="bg-white border rounded-xl p-5 shadow-sm"
-            >
-              <p className="font-bold">{c.className}</p>
+                <p>📚 Classes: {classes.length}</p>
+                <p>📊 Avg Progress: 70%</p>
+                <p>⚡ AI Ready</p>
 
-              {c.assignments?.length > 0 ? (
-                c.assignments.map((a: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="border-t mt-3 pt-2 text-sm"
-                  >
-                    <div className="flex justify-between">
-                      <span>{a.assignment || "Unnamed assignment"}</span>
-                      <span className="text-red-600">
-                        {a.weight}%
-                      </span>
-                    </div>
+              </div>
 
-                    {/* DATE OPTIONAL (FIXED) */}
-                    {a.date ? (
-                      <p className="text-xs text-gray-500">
-                        Due: {a.date}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-gray-400">
-                        No due date provided
-                      </p>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-400 text-sm mt-2">
-                  No assignments yet
-                </p>
-              )}
             </div>
-          ))}
+
+          </div>
 
         </div>
 
