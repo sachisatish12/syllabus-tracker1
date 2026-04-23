@@ -1,0 +1,142 @@
+"use client";
+
+import { useState } from "react";
+import type { ClassType } from "@/lib/types";
+
+interface ReviewClassModalProps {
+	initialData: ClassType;
+	isOpen: boolean;
+	onClose: () => void;
+	onConfirm: (data: ClassType) => void;
+}
+
+export default function ReviewClassModal({ initialData, isOpen, onClose, onConfirm }: ReviewClassModalProps) {
+	const [formData, setFormData] = useState<ClassType>(initialData);
+
+	if (!isOpen) return null;
+
+	const handleChange = (field: keyof ClassType, value: any) => {
+		setFormData((prev) => ({ ...prev, [field]: value }));
+	};
+
+	const handleOfficeHoursChange = (field: "time" | "location", value: string) => {
+		setFormData((prev) => ({
+			...prev,
+			officeHours: { ...prev.officeHours, [field]: value },
+		}));
+	};
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		onConfirm(formData);
+	};
+
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+			<div className="absolute inset-0 bg-black/30" onClick={onClose} />
+			<div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+				<h2 className="text-xl font-bold mb-4">Review & Edit Class</h2>
+
+				<form onSubmit={handleSubmit} className="space-y-4">
+					<div>
+						<label className="block text-sm font-medium mb-1">Class Name *</label>
+						<input
+							type="text"
+							value={formData.className}
+							onChange={(e) => handleChange("className", e.target.value)}
+							className="w-full border rounded-lg px-3 py-2"
+							required
+						/>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="block text-sm font-medium mb-1">Professor Name</label>
+							<input
+								type="text"
+								value={formData.teacherName}
+								onChange={(e) => handleChange("teacherName", e.target.value)}
+								className="w-full border rounded-lg px-3 py-2"
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium mb-1">Professor Email</label>
+							<input
+								type="text"
+								value={formData.teacherEmail}
+								onChange={(e) => handleChange("teacherEmail", e.target.value)}
+								className="w-full border rounded-lg px-3 py-2"
+							/>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="block text-sm font-medium mb-1">TA Name</label>
+							<input
+								type="text"
+								value={formData.taName}
+								onChange={(e) => handleChange("taName", e.target.value)}
+								className="w-full border rounded-lg px-3 py-2"
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium mb-1">TA Email</label>
+							<input
+								type="text"
+								value={formData.taEmail}
+								onChange={(e) => handleChange("taEmail", e.target.value)}
+								className="w-full border rounded-lg px-3 py-2"
+							/>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="block text-sm font-medium mb-1">Office Hours Time</label>
+							<input
+								type="text"
+								value={formData.officeHours.time}
+								onChange={(e) => handleOfficeHoursChange("time", e.target.value)}
+								className="w-full border rounded-lg px-3 py-2"
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium mb-1">Office Location</label>
+							<input
+								type="text"
+								value={formData.officeHours.location}
+								onChange={(e) => handleOfficeHoursChange("location", e.target.value)}
+								className="w-full border rounded-lg px-3 py-2"
+							/>
+						</div>
+					</div>
+
+					{/* Optional: Display exams/assignments/quizzes count (read-only) */}
+					<div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+						<p>
+							Exams: {formData.exams.length} | Assignments: {formData.assignments.length} | Quizzes:{" "}
+							{formData.quizzes.length}
+						</p>
+						<p className="text-xs text-gray-400 mt-1">
+							These items are extracted from the syllabus and can be viewed later.
+						</p>
+					</div>
+
+					<div className="flex justify-end gap-2 pt-4">
+						<button
+							type="button"
+							onClick={onClose}
+							className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+						>
+							Cancel
+						</button>
+						<button type="submit" className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">
+							Confirm & Add Class
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	);
+}

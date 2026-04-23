@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 
-export default function ManualClassForm({ onAdd }: any) {
+interface Props {
+	onPreview: (data: any) => void;
+}
+
+export default function ManualClassForm({ onPreview }: Props) {
 	const [form, setForm] = useState({
 		className: "",
-		teacher: "",
+		teacherName: "",
 		teacherEmail: "",
 		taName: "",
 		taEmail: "",
@@ -13,19 +17,20 @@ export default function ManualClassForm({ onAdd }: any) {
 		officeLocation: "",
 	});
 
-	function handleChange(e: any) {
+	function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
 		setForm({
 			...form,
 			[e.target.name]: e.target.value,
 		});
 	}
 
-	function handleSubmit() {
-		if (!form.className || !form.teacher) return;
+	function handleSubmit(e: React.FormEvent) {
+		e.preventDefault();
+		if (!form.className || !form.teacherName) return;
 
-		onAdd({
+		onPreview({
 			className: form.className,
-			teacher: form.teacher,
+			teacherName: form.teacherName,
 			teacherEmail: form.teacherEmail,
 			taName: form.taName,
 			taEmail: form.taEmail,
@@ -33,35 +38,30 @@ export default function ManualClassForm({ onAdd }: any) {
 				time: form.officeTime,
 				location: form.officeLocation,
 			},
-		});
-
-		setForm({
-			className: "",
-			teacher: "",
-			teacherEmail: "",
-			taName: "",
-			taEmail: "",
-			officeTime: "",
-			officeLocation: "",
+			exams: [],
+			assignments: [],
+			quizzes: [],
 		});
 	}
 
 	return (
-		<div className="space-y-3">
+		<form onSubmit={handleSubmit} className="space-y-3">
 			<input
 				name="className"
-				placeholder="Class Name"
+				placeholder="Class Name *"
 				value={form.className}
 				onChange={handleChange}
 				className="w-full border p-2 rounded"
+				required
 			/>
 
 			<input
-				name="teacher"
-				placeholder="Professor Name"
-				value={form.teacher}
+				name="teacherName"
+				placeholder="Professor Name *"
+				value={form.teacherName}
 				onChange={handleChange}
 				className="w-full border p-2 rounded"
+				required
 			/>
 
 			<input
@@ -105,11 +105,11 @@ export default function ManualClassForm({ onAdd }: any) {
 			/>
 
 			<button
-				onClick={handleSubmit}
+				type="submit"
 				className="w-full bg-black text-white py-2 rounded hover:bg-red-600 transition cursor-pointer"
 			>
-				Add Class
+				Preview Class
 			</button>
-		</div>
+		</form>
 	);
 }
