@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+
 import Sidebar from "@/components/Sidebar";
 import AISyllabusParser from "@/components/AISyllabusParser";
 import ManualClassForm from "@/components/ManualClassForm";
 
+import { addClass } from "@/lib/store";
+
 type ClassType = {
   className: string;
   teacher: string;
-  exams: any[];
-  assignments: any[];
-  quizzes: any[];
-  officeHours?: {
+  teacherEmail: string;
+  taName: string;
+  taEmail: string;
+  officeHours: {
     time: string;
     location: string;
   };
@@ -21,6 +25,7 @@ export default function Dashboard() {
   const [classes, setClasses] = useState<ClassType[]>([]);
 
   function handleParsed(data: ClassType) {
+    addClass(data);
     setClasses((prev) => [...prev, data]);
   }
 
@@ -44,6 +49,7 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold text-red-600 mb-3">
             Upload Syllabus (PDF)
           </h2>
+
           <AISyllabusParser onParsed={handleParsed} />
         </div>
 
@@ -54,9 +60,10 @@ export default function Dashboard() {
           </h2>
 
           <ManualClassForm
-            onAdd={(data) =>
-              setClasses((prev) => [...prev, data])
-            }
+            onAdd={(data: ClassType) => {
+              addClass(data);
+              setClasses((prev) => [...prev, data]);
+            }}
           />
         </div>
 
@@ -72,21 +79,32 @@ export default function Dashboard() {
             </p>
           ) : (
             classes.map((c, i) => (
-              <div
+              <Link
                 key={i}
-                className="bg-white border rounded-2xl p-5 mb-3"
+                href={`/study-hub/${encodeURIComponent(c.className)}`}
               >
-                <h3 className="font-bold">{c.className}</h3>
-                <p className="text-sm text-gray-500">{c.teacher}</p>
+                <div className="bg-white border rounded-2xl p-5 mb-3 cursor-pointer hover:shadow-md transition">
 
-                {/* OFFICE HOURS */}
-                {c.officeHours && (
-                  <p className="text-xs text-gray-400 mt-2">
-                    Office Hours: {c.officeHours.time} @{" "}
-                    {c.officeHours.location}
+                  <h3 className="font-bold">{c.className}</h3>
+
+                  <p className="text-sm text-gray-500">
+                    Professor: {c.teacher}
                   </p>
-                )}
-              </div>
+
+                  <p className="text-xs text-gray-400">
+                    📧 {c.teacherEmail}
+                  </p>
+
+                  <p className="text-xs text-gray-400">
+                    TA: {c.taName} ({c.taEmail})
+                  </p>
+
+                  <p className="text-xs text-gray-400 mt-2">
+                    Office Hours: {c.officeHours.time} @ {c.officeHours.location}
+                  </p>
+
+                </div>
+              </Link>
             ))
           )}
         </div>

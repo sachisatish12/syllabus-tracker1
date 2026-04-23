@@ -2,118 +2,112 @@
 
 import { useState } from "react";
 
-type Props = {
-  onAdd: (data: any) => void;
-};
+export default function ManualClassForm({ onAdd }: any) {
+  const [form, setForm] = useState({
+    className: "",
+    teacher: "",
+    teacherEmail: "",
+    taName: "",
+    taEmail: "",
+    officeTime: "",
+    officeLocation: "",
+  });
 
-export default function ManualClassForm({ onAdd }: Props) {
-  const [className, setClassName] = useState("");
-  const [teacher, setTeacher] = useState("");
-
-  const [type, setType] = useState("Assignment");
-  const [itemName, setItemName] = useState("");
-  const [weight, setWeight] = useState("");
-  const [date, setDate] = useState("");
-
-  const [officeTime, setOfficeTime] = useState("");
-  const [officeLocation, setOfficeLocation] = useState("");
+  function handleChange(e: any) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  }
 
   function handleSubmit() {
-    const newClass = {
-      className,
-      teacher,
-      exams: [],
-      assignments: type === "Assignment" ? [{ name: itemName, weight, date }] : [],
-      quizzes: type === "Quiz" ? [{ name: itemName, weight }] : [],
+    if (!form.className || !form.teacher) return;
+
+    onAdd({
+      className: form.className,
+      teacher: form.teacher,
+      teacherEmail: form.teacherEmail,
+      taName: form.taName,
+      taEmail: form.taEmail,
       officeHours: {
-        time: officeTime,
-        location: officeLocation,
+        time: form.officeTime,
+        location: form.officeLocation,
       },
-    };
+    });
 
-    onAdd(newClass);
-
-    // reset
-    setClassName("");
-    setTeacher("");
-    setItemName("");
-    setWeight("");
-    setDate("");
-    setOfficeTime("");
-    setOfficeLocation("");
+    setForm({
+      className: "",
+      teacher: "",
+      teacherEmail: "",
+      taName: "",
+      taEmail: "",
+      officeTime: "",
+      officeLocation: "",
+    });
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
 
-      {/* CLASS INFO */}
       <input
+        name="className"
         placeholder="Class Name"
-        value={className}
-        onChange={(e) => setClassName(e.target.value)}
+        value={form.className}
+        onChange={handleChange}
         className="w-full border p-2 rounded"
       />
 
       <input
+        name="teacher"
         placeholder="Professor Name"
-        value={teacher}
-        onChange={(e) => setTeacher(e.target.value)}
-        className="w-full border p-2 rounded"
-      />
-
-      {/* TYPE */}
-      <select
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-        className="w-full border p-2 rounded"
-      >
-        <option>Assignment</option>
-        <option>Exam</option>
-        <option>Quiz</option>
-      </select>
-
-      {/* ITEM */}
-      <input
-        placeholder="Name (Exam/Assignment/Quiz)"
-        value={itemName}
-        onChange={(e) => setItemName(e.target.value)}
+        value={form.teacher}
+        onChange={handleChange}
         className="w-full border p-2 rounded"
       />
 
       <input
-        placeholder="Weight (%)"
-        value={weight}
-        onChange={(e) => setWeight(e.target.value)}
-        className="w-full border p-2 rounded"
-      />
-
-      {/* OPTIONAL DATE */}
-      <input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-        className="w-full border p-2 rounded"
-      />
-
-      {/* OFFICE HOURS */}
-      <input
-        placeholder="Office Hours Time (e.g. Mon 2-4pm)"
-        value={officeTime}
-        onChange={(e) => setOfficeTime(e.target.value)}
+        name="teacherEmail"
+        placeholder="Professor Email"
+        value={form.teacherEmail}
+        onChange={handleChange}
         className="w-full border p-2 rounded"
       />
 
       <input
+        name="taName"
+        placeholder="TA Name"
+        value={form.taName}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+      />
+
+      <input
+        name="taEmail"
+        placeholder="TA Email"
+        value={form.taEmail}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+      />
+
+      <input
+        name="officeTime"
+        placeholder="Office Hours (e.g. Mon 2–4pm)"
+        value={form.officeTime}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+      />
+
+      <input
+        name="officeLocation"
         placeholder="Office Location"
-        value={officeLocation}
-        onChange={(e) => setOfficeLocation(e.target.value)}
+        value={form.officeLocation}
+        onChange={handleChange}
         className="w-full border p-2 rounded"
       />
 
-      {/* SUBMIT */}
       <button
         onClick={handleSubmit}
-        className="w-full bg-black text-white py-2 rounded hover:bg-red-600"
+        className="w-full bg-black text-white py-2 rounded hover:bg-red-600 transition"
       >
         Add Class
       </button>
