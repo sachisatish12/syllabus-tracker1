@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import AISyllabusParser from "@/components/AISyllabusParser";
+import ManualClassForm from "@/components/ManualClassForm";
 
 type ClassType = {
   className: string;
@@ -10,6 +11,10 @@ type ClassType = {
   exams: any[];
   assignments: any[];
   quizzes: any[];
+  officeHours?: {
+    time: string;
+    location: string;
+  };
 };
 
 export default function Dashboard() {
@@ -21,7 +26,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-b from-white via-red-50 to-white">
-      
+
       <Sidebar />
 
       <div className="flex-1 p-6 max-w-5xl mx-auto">
@@ -42,14 +47,17 @@ export default function Dashboard() {
           <AISyllabusParser onParsed={handleParsed} />
         </div>
 
-        {/* MANUAL INPUT (we'll build next) */}
+        {/* MANUAL INPUT */}
         <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-black mb-3">
             Or Enter Manually
           </h2>
-          <p className="text-sm text-gray-400">
-            (Manual form coming next)
-          </p>
+
+          <ManualClassForm
+            onAdd={(data) =>
+              setClasses((prev) => [...prev, data])
+            }
+          />
         </div>
 
         {/* CLASSES */}
@@ -60,7 +68,7 @@ export default function Dashboard() {
 
           {classes.length === 0 ? (
             <p className="text-gray-400 text-sm">
-              No classes yet. Upload a syllabus to get started.
+              No classes yet. Add one manually or upload a syllabus.
             </p>
           ) : (
             classes.map((c, i) => (
@@ -70,6 +78,14 @@ export default function Dashboard() {
               >
                 <h3 className="font-bold">{c.className}</h3>
                 <p className="text-sm text-gray-500">{c.teacher}</p>
+
+                {/* OFFICE HOURS */}
+                {c.officeHours && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    Office Hours: {c.officeHours.time} @{" "}
+                    {c.officeHours.location}
+                  </p>
+                )}
               </div>
             ))
           )}
