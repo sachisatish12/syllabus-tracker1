@@ -1,71 +1,124 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { ClassType, Exam, Assignment, Quiz } from "@/lib/types";
 
-export default function AISyllabusParser({ onParsed }: any) {
-  const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+interface RawResponse {
+	className: string;
+	teacherName: string;
+	teacherEmail: string;
+	exams: Exam[];
+	assignments: Assignment[];
+	quizzes: Quiz[];
+	officeHours: { time: string; location: string };
+	taName: string;
+	taEmail: string;
+}
 
-  async function handleUpload() {
-    console.log("UPLOAD CLICKED");
-    console.log("file at upload time:", file);
+interface Props {
+	onParsed: (data: ClassType) => void;
+}
 
-    if (!file) {
-      console.log("No file selected");
-      return;
-    }
+export default function AISyllabusParser({ onParsed }: Props) {
+	const [file, setFile] = useState<File | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
-    setLoading(true);
+	function mapAIToClassType(data: RawResponse): ClassType {
+		return {
+			className: data.className || "Untitled Class",
+			teacherName: data.teacherName || "Unknown Instructor",
+			teacherEmail: data.teacherEmail || "Unknown Instructor Email",
+			exams: data.exams || [],
+			assignments: data.assignments || [],
+			quizzes: data.quizzes || [],
+			officeHours: data.officeHours || { time: "TBD", location: "TBD" },
+			taName: data.taName || "Unknown TA Name",
+			taEmail: data.taEmail || "Unknown TA Email",
+		};
+	}
 
-    const formData = new FormData();
-    formData.append("file", file);
+	async function handleUpload() {
+		if (!file) {
+			setError("Please select a PDF file first.");
+			return;
+		}
 
-    try {
-      const res = await fetch("/api/parse-syllabus", {
-        method: "POST",
-        body: formData,
-      });
+		setLoading(true);
+		setError(null);
 
-      console.log("API status:", res.status);
+		const formData = new FormData();
+		formData.append("file", file);
 
-      const data = await res.json();
+		try {
+			const res = await fetch("/api/parse-syllabus", {
+				method: "POST",
+				body: formData,
+			});
 
-      console.log("API response:", data);
+			const data = await res.json();
 
-      onParsed(data);
+			if (!res.ok) {
+				throw new Error(data.error || data.details || `Request failed (${res.status})`);
+			}
 
-      setFile(null);
-    } catch (err) {
-      console.error("Upload error:", err);
-    }
+			console.log("Raw AI response:", data);
 
-    setLoading(false);
-  }
+			const classData = mapAIToClassType(data as RawResponse);
+			onParsed(classData);
 
-  return (
-    <div className="space-y-4">
+			// Reset
+			setFile(null);
+			if (fileInputRef.current) {
+				fileInputRef.current.value = "";
+			}
+		} catch (err: any) {
+			console.error(err);
+			setError(err.message || "An unexpected error occurred.");
+		} finally {
+			setLoading(false);
+		}
+	}
 
-      {/* file upload */}
-      <input
-        type="file"
-        accept="application/pdf"
-        onChange={(e) => {
-          const selectedFile = e.target.files?.[0];
-          console.log("Selected file:", selectedFile);
-          setFile(selectedFile || null);
-        }}
-        className="w-full"
-      />
+	return (
+		<div className="space-y-4">
+			<input
+				type="file"
+				accept="application/pdf"
+				ref={fileInputRef}
+				style={{ display: "none" }}
+				onChange={(e) => {
+					setFile(e.target.files?.[0] || null);
+					setError(null);
+				}}
+			/>
 
-      {/* button */}
-      <button
-        onClick={handleUpload}
-        disabled={loading}
-        className="w-full py-3 rounded-xl bg-black text-white hover:bg-red-600 transition"
-      >
-        {loading ? "Reading syllabus..." : "Upload & Parse PDF →"}
-      </button>
+			<button
+				type="button"
+				onClick={() => fileInputRef.current?.click()}
+				className="w-full py-3 rounded-xl bg-gray-200 text-black hover:bg-gray-300 transition cursor-pointer"
+			>
+				{file ? (
+					<>
+						Selected: <span className="text-blue-400">'{file.name}'</span>
+					</>
+				) : (
+					"Choose PDF"
+				)}
+			</button>
 
-    </div>
-  );
+			{error && (
+				<div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg border border-red-200">{error}</div>
+			)}
+
+			<button
+				onClick={handleUpload}
+				disabled={loading || !file}
+				className="w-full py-3 rounded-xl bg-black text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+			>
+				{loading ? "Reading syllabus..." : "Upload & Parse PDF →"}
+			</button>
+		</div>
+	);
 }

@@ -2,114 +2,77 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
 import Sidebar from "@/components/Sidebar";
 import AISyllabusParser from "@/components/AISyllabusParser";
 import ManualClassForm from "@/components/ManualClassForm";
-
 import { addClass } from "@/lib/store";
-
-type ClassType = {
-  className: string;
-  teacher: string;
-  teacherEmail: string;
-  taName: string;
-  taEmail: string;
-  officeHours: {
-    time: string;
-    location: string;
-  };
-};
+import type { ClassType } from "@/lib/types";
 
 export default function Dashboard() {
-  const [classes, setClasses] = useState<ClassType[]>([]);
+	const [classes, setClasses] = useState<ClassType[]>([]);
 
-  function handleParsed(data: ClassType) {
-    addClass(data);
-    setClasses((prev) => [...prev, data]);
-  }
+	function handleParsed(data: ClassType) {
+		addClass(data);
+		setClasses((prev) => [...prev, data]);
+	}
 
-  return (
-    <div className="min-h-screen flex bg-gradient-to-b from-white via-red-50 to-white">
+	return (
+		<div className="min-h-screen flex bg-linear-to-b from-white via-red-50 to-white">
+			<Sidebar />
 
-      <Sidebar />
+			<div className="flex-1 p-6 max-w-5xl mx-auto">
+				{/* HEADER */}
+				<div className="mb-6">
+					<h1 className="text-3xl font-bold text-black">Dashboard</h1>
+					<p className="text-gray-500 text-sm">Upload your syllabus or enter class details manually.</p>
+				</div>
 
-      <div className="flex-1 p-6 max-w-5xl mx-auto">
+				{/* AI PARSER */}
+				<div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
+					<h2 className="text-lg font-semibold text-red-600 mb-3">Upload Syllabus (PDF)</h2>
+					<AISyllabusParser onParsed={handleParsed} />
+				</div>
 
-        {/* HEADER */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-black">Dashboard</h1>
-          <p className="text-gray-500 text-sm">
-            Upload your syllabus or enter class details manually.
-          </p>
-        </div>
+				{/* MANUAL INPUT */}
+				<div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
+					<h2 className="text-lg font-semibold text-black mb-3">Or Enter Manually</h2>
+					<ManualClassForm
+						onAdd={(data: ClassType) => {
+							addClass(data);
+							setClasses((prev) => [...prev, data]);
+						}}
+					/>
+				</div>
 
-        {/* AI PARSER */}
-        <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-red-600 mb-3">
-            Upload Syllabus (PDF)
-          </h2>
+				{/* CLASSES */}
+				<div>
+					<h2 className="text-lg font-semibold text-black mb-3">Your Classes</h2>
 
-          <AISyllabusParser onParsed={handleParsed} />
-        </div>
+					{classes.length === 0 ? (
+						<p className="text-gray-400 text-sm">No classes yet. Add one manually or upload a syllabus.</p>
+					) : (
+						classes.map((c, i) => (
+							<Link key={i} href={`/study-hub/${encodeURIComponent(c.className)}`}>
+								<div className="bg-white border rounded-2xl p-5 mb-3 cursor-pointer hover:shadow-md transition">
+									<h3 className="font-bold">{c.className}</h3>
 
-        {/* MANUAL INPUT */}
-        <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-black mb-3">
-            Or Enter Manually
-          </h2>
+									<p className="text-sm text-gray-500">Professor: {c.teacherName}</p>
 
-          <ManualClassForm
-            onAdd={(data: ClassType) => {
-              addClass(data);
-              setClasses((prev) => [...prev, data]);
-            }}
-          />
-        </div>
+									<p className="text-xs text-gray-400">📧 {c.teacherEmail}</p>
 
-        {/* CLASSES */}
-        <div>
-          <h2 className="text-lg font-semibold text-black mb-3">
-            Your Classes
-          </h2>
+									<p className="text-xs text-gray-400">
+										TA: {c.taName} ({c.taEmail})
+									</p>
 
-          {classes.length === 0 ? (
-            <p className="text-gray-400 text-sm">
-              No classes yet. Add one manually or upload a syllabus.
-            </p>
-          ) : (
-            classes.map((c, i) => (
-              <Link
-                key={i}
-                href={`/study-hub/${encodeURIComponent(c.className)}`}
-              >
-                <div className="bg-white border rounded-2xl p-5 mb-3 cursor-pointer hover:shadow-md transition">
-
-                  <h3 className="font-bold">{c.className}</h3>
-
-                  <p className="text-sm text-gray-500">
-                    Professor: {c.teacher}
-                  </p>
-
-                  <p className="text-xs text-gray-400">
-                    📧 {c.teacherEmail}
-                  </p>
-
-                  <p className="text-xs text-gray-400">
-                    TA: {c.taName} ({c.taEmail})
-                  </p>
-
-                  <p className="text-xs text-gray-400 mt-2">
-                    Office Hours: {c.officeHours.time} @ {c.officeHours.location}
-                  </p>
-
-                </div>
-              </Link>
-            ))
-          )}
-        </div>
-
-      </div>
-    </div>
-  );
+									<p className="text-xs text-gray-400 mt-2">
+										Office Hours: {c.officeHours.time} @ {c.officeHours.location}
+									</p>
+								</div>
+							</Link>
+						))
+					)}
+				</div>
+			</div>
+		</div>
+	);
 }
