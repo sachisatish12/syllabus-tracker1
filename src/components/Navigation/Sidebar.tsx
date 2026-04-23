@@ -1,5 +1,6 @@
 "use client";
 
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FiHome, FiPlusCircle, FiBarChart2, FiLogOut, FiCalendar } from "react-icons/fi";
@@ -55,16 +56,10 @@ export default function Sidebar() {
 
 			{/* Footer: Logout button above user info */}
 			<div className="p-4 border-t border-gray-800 shrink-0">
-				<div className="flex items-center gap-3 mb-2">
-					<div className="w-9 h-9 rounded-full bg-linear-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-medium shrink-0">
-						JD
-					</div>
-					<div className="flex-1 min-w-0">
-						<p className="text-sm font-medium text-white truncate">John Doe</p>
-						<p className="text-xs text-gray-400 truncate">john@example.com</p>
-					</div>
-				</div>
-				<button className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg cursor-pointer transition">
+				<button
+					className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg cursor-pointer transition"
+					onClick={() => signOut({ callbackUrl: "/login" })}
+				>
 					<FiLogOut size={16} />
 					<span>Logout</span>
 				</button>
