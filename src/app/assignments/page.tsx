@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Navigation/Sidebar";
 import type { ClassType, Exam, Assignment, Quiz } from "@/lib/types";
-import { FiCalendar, FiClock, FiBookOpen, FiAward, FiPlus, FiEdit2, FiTrash2, FiAlertCircle } from "react-icons/fi";
+import {
+	FiCalendar,
+	FiClock,
+	FiBookOpen,
+	FiAward,
+	FiPlus,
+	FiEdit2,
+	FiTrash2,
+	FiAlertCircle,
+	FiCheckCircle,
+	FiChevronDown,
+	FiChevronRight,
+} from "react-icons/fi";
 import AddItemModal from "@/components/Modals/AddItemModal";
 import EditItemModal from "@/components/Modals/EditItemModal";
 
@@ -12,33 +24,56 @@ interface DueItem {
 	type: "exam" | "assignment" | "quiz";
 	name: string;
 	className: string;
-	dueDate: string | null; // null if no date
+	dueDate: string | null;
 	weight: number;
 	classIndex: number;
 	itemIndex: number;
+	completed: boolean;
 }
 
 export default function AllAssignments() {
 	const [upcomingItems, setUpcomingItems] = useState<DueItem[]>([]);
+	const [pastDueItems, setPastDueItems] = useState<DueItem[]>([]);
 	const [undatedItems, setUndatedItems] = useState<DueItem[]>([]);
+	const [completedItems, setCompletedItems] = useState<DueItem[]>([]);
 	const [classes, setClasses] = useState<ClassType[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 	const [editingItem, setEditingItem] = useState<DueItem | null>(null);
+
+	// Collapsible state for each section
+	const [showPastDue, setShowPastDue] = useState(true);
+	const [showUpcoming, setShowUpcoming] = useState(true);
+	const [showUndated, setShowUndated] = useState(true);
+	const [showCompleted, setShowCompleted] = useState(false);
+
+	const getCompletedMap = (): Record<string, boolean> => {
+		const stored = localStorage.getItem("completedItems");
+		return stored ? JSON.parse(stored) : {};
+	};
+
+	const saveCompletedMap = (map: Record<string, boolean>) => {
+		localStorage.setItem("completedItems", JSON.stringify(map));
+	};
 
 	const loadData = () => {
 		const stored = localStorage.getItem("classes");
 		if (stored) {
 			const parsedClasses: ClassType[] = JSON.parse(stored);
 			setClasses(parsedClasses);
-			const dated: DueItem[] = [];
+			const completedMap = getCompletedMap();
+			const now = new Date();
+
+			const upcoming: DueItem[] = [];
+			const pastDue: DueItem[] = [];
 			const undated: DueItem[] = [];
+			const completed: DueItem[] = [];
 
 			parsedClasses.forEach((cls, classIdx) => {
-				// Exams
 				cls.exams.forEach((exam, examIdx) => {
+					const id = `${cls.className}-exam-${examIdx}`;
 					const item: DueItem = {
-						id: `${cls.className}-exam-${examIdx}`,
+						id,
 						type: "exam",
 						name: exam.name,
 						className: cls.className,
@@ -46,15 +81,16 @@ export default function AllAssignments() {
 						weight: exam.weight,
 						classIndex: classIdx,
 						itemIndex: examIdx,
+						completed: completedMap[id] || false,
 					};
-					exam.date ? dated.push(item) : undated.push(item);
+					categorizeItem(item, now, upcoming, pastDue, undated, completed);
 				});
 
-				// Assignments
 				cls.assignments.forEach((assignment, assignIdx) => {
+					const id = `${cls.className}-assignment-${assignIdx}`;
 					const due = (assignment as any).dueDate;
 					const item: DueItem = {
-						id: `${cls.className}-assignment-${assignIdx}`,
+						id,
 						type: "assignment",
 						name: assignment.name,
 						className: cls.className,
@@ -62,14 +98,15 @@ export default function AllAssignments() {
 						weight: assignment.weight,
 						classIndex: classIdx,
 						itemIndex: assignIdx,
+						completed: completedMap[id] || false,
 					};
-					due ? dated.push(item) : undated.push(item);
+					categorizeItem(item, now, upcoming, pastDue, undated, completed);
 				});
 
-				// Quizzes
 				cls.quizzes.forEach((quiz, quizIdx) => {
+					const id = `${cls.className}-quiz-${quizIdx}`;
 					const item: DueItem = {
-						id: `${cls.className}-quiz-${quizIdx}`,
+						id,
 						type: "quiz",
 						name: quiz.name || `Quiz ${quizIdx + 1}`,
 						className: cls.className,
@@ -77,21 +114,43 @@ export default function AllAssignments() {
 						weight: quiz.weight,
 						classIndex: classIdx,
 						itemIndex: quizIdx,
+						completed: completedMap[id] || false,
 					};
-					quiz.date ? dated.push(item) : undated.push(item);
+					categorizeItem(item, now, upcoming, pastDue, undated, completed);
 				});
 			});
 
-			dated.sort((a, b) => {
-				if (!a.dueDate) return 1;
-				if (!b.dueDate) return -1;
-				return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+			upcoming.sort((a, b) => (a.dueDate! > b.dueDate! ? 1 : -1));
+			pastDue.sort((a, b) => (a.dueDate! > b.dueDate! ? 1 : -1));
+			completed.sort((a, b) => {
+				if (a.dueDate && b.dueDate) return a.dueDate > b.dueDate ? 1 : -1;
+				return 0;
 			});
 
-			setUpcomingItems(dated);
+			setUpcomingItems(upcoming);
+			setPastDueItems(pastDue);
 			setUndatedItems(undated);
+			setCompletedItems(completed);
 		}
 		setLoading(false);
+	};
+
+	const categorizeItem = (
+		item: DueItem,
+		now: Date,
+		upcoming: DueItem[],
+		pastDue: DueItem[],
+		undated: DueItem[],
+		completed: DueItem[],
+	) => {
+		if (item.completed) {
+			completed.push(item);
+		} else if (!item.dueDate) {
+			undated.push(item);
+		} else {
+			const due = new Date(item.dueDate);
+			due < now ? pastDue.push(item) : upcoming.push(item);
+		}
 	};
 
 	useEffect(() => {
@@ -104,11 +163,18 @@ export default function AllAssignments() {
 		loadData();
 	};
 
+	const toggleComplete = (item: DueItem) => {
+		const completedMap = getCompletedMap();
+		completedMap[item.id] = !item.completed;
+		saveCompletedMap(completedMap);
+		loadData();
+	};
+
 	const handleAddItem = (newItem: {
 		classIndex: number;
 		type: "exam" | "assignment" | "quiz";
 		name: string;
-		dueDate: string; // can be empty string
+		dueDate: string;
 		weight: number;
 	}) => {
 		const updatedClasses = [...classes];
@@ -150,6 +216,10 @@ export default function AllAssignments() {
 		} else if (item.type === "quiz") {
 			targetClass.quizzes.splice(item.itemIndex, 1);
 		}
+
+		const completedMap = getCompletedMap();
+		delete completedMap[item.id];
+		saveCompletedMap(completedMap);
 
 		saveClasses(updatedClasses);
 	};
@@ -210,6 +280,11 @@ export default function AllAssignments() {
 		});
 	};
 
+	const isPastDue = (dateStr: string | null) => {
+		if (!dateStr) return false;
+		return new Date(dateStr) < new Date();
+	};
+
 	const renderItemCard = (item: DueItem) => (
 		<div
 			key={item.id}
@@ -217,9 +292,19 @@ export default function AllAssignments() {
 		>
 			<div className="flex items-start justify-between">
 				<div className="flex items-start gap-4">
-					<div className="mt-1">{getTypeIcon(item.type)}</div>
+					<button
+						onClick={() => toggleComplete(item)}
+						className="mt-1 text-gray-400 hover:text-green-500 transition"
+						title={item.completed ? "Mark incomplete" : "Mark complete"}
+					>
+						<FiCheckCircle size={20} className={item.completed ? "text-green-500" : ""} />
+					</button>
 					<div>
-						<h3 className="font-semibold text-gray-900">{item.name}</h3>
+						<h3
+							className={`font-semibold ${item.completed ? "text-gray-400 line-through" : "text-gray-900"}`}
+						>
+							{item.name}
+						</h3>
 						<p className="text-sm text-gray-500">
 							{item.className} • Weight: {item.weight}%
 						</p>
@@ -229,8 +314,16 @@ export default function AllAssignments() {
 					<div className="flex items-center gap-2 text-sm">
 						{item.dueDate ? (
 							<>
-								<FiClock className="text-gray-400" />
-								<span className="font-medium text-gray-700">{formatDate(item.dueDate)}</span>
+								<FiClock
+									className={
+										isPastDue(item.dueDate) && !item.completed ? "text-red-500" : "text-gray-400"
+									}
+								/>
+								<span
+									className={`font-medium ${isPastDue(item.dueDate) && !item.completed ? "text-red-600" : "text-gray-700"}`}
+								>
+									{formatDate(item.dueDate)}
+								</span>
 							</>
 						) : (
 							<>
@@ -260,6 +353,43 @@ export default function AllAssignments() {
 		</div>
 	);
 
+	const renderCollapsibleSection = (
+		title: string,
+		icon: React.ReactNode,
+		items: DueItem[],
+		emptyMessage: string,
+		isExpanded: boolean,
+		onToggle: () => void,
+	) => (
+		<section className="mb-6">
+			<button
+				onClick={onToggle}
+				className="w-full flex items-center justify-between text-lg font-semibold text-gray-800 mb-3 hover:text-gray-900 transition"
+			>
+				<span className="flex items-center gap-2">
+					{icon}
+					{title}
+					{items.length > 0 && (
+						<span className="text-sm font-normal text-gray-400 ml-2">({items.length})</span>
+					)}
+				</span>
+				{isExpanded ? <FiChevronDown size={20} /> : <FiChevronRight size={20} />}
+			</button>
+			{isExpanded && (
+				<>
+					{items.length === 0 ? (
+						<div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-200">
+							<div className="mx-auto text-gray-300 mb-2 text-3xl">{icon}</div>
+							<p className="text-gray-500 text-sm">{emptyMessage}</p>
+						</div>
+					) : (
+						<div className="space-y-3">{items.map(renderItemCard)}</div>
+					)}
+				</>
+			)}
+		</section>
+	);
+
 	return (
 		<div className="min-h-screen flex bg-gray-50">
 			<Sidebar />
@@ -282,47 +412,41 @@ export default function AllAssignments() {
 					<div className="text-center py-12 text-gray-400">Loading...</div>
 				) : (
 					<>
-						{/* Upcoming Section */}
-						<section className="mb-8">
-							<h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-								<FiCalendar className="text-red-500" />
-								Upcoming
-								{upcomingItems.length > 0 && (
-									<span className="text-sm font-normal text-gray-400 ml-2">
-										({upcomingItems.length})
-									</span>
-								)}
-							</h2>
-							{upcomingItems.length === 0 ? (
-								<div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-200">
-									<FiCalendar className="mx-auto text-gray-300 mb-2" size={32} />
-									<p className="text-gray-500 text-sm">No upcoming due dates</p>
-								</div>
-							) : (
-								<div className="space-y-3">{upcomingItems.map(renderItemCard)}</div>
-							)}
-						</section>
+						{renderCollapsibleSection(
+							"Past Due",
+							<FiAlertCircle className="text-red-500" />,
+							pastDueItems,
+							"No past due items — you're all caught up!",
+							showPastDue,
+							() => setShowPastDue(!showPastDue),
+						)}
 
-						{/* No Due Date Section */}
-						<section>
-							<h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-								<FiAlertCircle className="text-yellow-500" />
-								No Due Date
-								{undatedItems.length > 0 && (
-									<span className="text-sm font-normal text-gray-400 ml-2">
-										({undatedItems.length})
-									</span>
-								)}
-							</h2>
-							{undatedItems.length === 0 ? (
-								<div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-200">
-									<FiAlertCircle className="mx-auto text-gray-300 mb-2" size={32} />
-									<p className="text-gray-500 text-sm">All items have due dates</p>
-								</div>
-							) : (
-								<div className="space-y-3">{undatedItems.map(renderItemCard)}</div>
-							)}
-						</section>
+						{renderCollapsibleSection(
+							"Upcoming",
+							<FiCalendar className="text-blue-500" />,
+							upcomingItems,
+							"No upcoming due dates",
+							showUpcoming,
+							() => setShowUpcoming(!showUpcoming),
+						)}
+
+						{renderCollapsibleSection(
+							"No Due Date",
+							<FiClock className="text-yellow-500" />,
+							undatedItems,
+							"All items have due dates",
+							showUndated,
+							() => setShowUndated(!showUndated),
+						)}
+
+						{renderCollapsibleSection(
+							"Completed",
+							<FiCheckCircle className="text-green-500" />,
+							completedItems,
+							"No completed items yet",
+							showCompleted,
+							() => setShowCompleted(!showCompleted),
+						)}
 					</>
 				)}
 

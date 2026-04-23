@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { calculateGrade } from "@/lib/grade";
 import Sidebar from "@/components/Navigation/Sidebar";
-import { FiPlus, FiTrash2, FiDownload } from "react-icons/fi";
+import { FiPlus, FiTrash2 } from "react-icons/fi";
 import type { ClassType } from "@/lib/types";
 
 interface GradeItem {
@@ -18,7 +18,6 @@ export default function GradeCalculatorPage() {
 	const [items, setItems] = useState<GradeItem[]>([{ name: "", score: "", weight: "" }]);
 	const [result, setResult] = useState<number | null>(null);
 
-	// Load classes from localStorage
 	useEffect(() => {
 		const stored = localStorage.getItem("classes");
 		if (stored) {
@@ -27,7 +26,6 @@ export default function GradeCalculatorPage() {
 		}
 	}, []);
 
-	// When a class is selected, populate items from that class
 	const handleClassSelect = (className: string) => {
 		setSelectedClass(className);
 		const targetClass = classes.find((c) => c.className === className);
@@ -35,7 +33,6 @@ export default function GradeCalculatorPage() {
 
 		const newItems: GradeItem[] = [];
 
-		// Add exams
 		targetClass.exams.forEach((exam) => {
 			newItems.push({
 				name: exam.name || "Exam",
@@ -44,7 +41,6 @@ export default function GradeCalculatorPage() {
 			});
 		});
 
-		// Add assignments
 		targetClass.assignments.forEach((assignment) => {
 			newItems.push({
 				name: assignment.name || "Assignment",
@@ -53,7 +49,6 @@ export default function GradeCalculatorPage() {
 			});
 		});
 
-		// Add quizzes
 		targetClass.quizzes.forEach((quiz) => {
 			newItems.push({
 				name: quiz.name || "Quiz",
@@ -62,7 +57,6 @@ export default function GradeCalculatorPage() {
 			});
 		});
 
-		// If no items, start with one empty row
 		if (newItems.length === 0) {
 			setItems([{ name: "", score: "", weight: "" }]);
 		} else {
@@ -87,11 +81,23 @@ export default function GradeCalculatorPage() {
 	}
 
 	function calculate() {
-		const parsed = items.map((item) => ({
+		let parsed = items.map((item) => ({
 			name: item.name,
 			score: parseFloat(item.score) || 0,
 			weight: parseFloat(item.weight) || 0,
 		}));
+
+		const totalWeight = parsed.reduce((sum, item) => sum + item.weight, 0);
+
+		// If no weights provided, treat all items as equally weighted
+		if (totalWeight === 0 && parsed.length > 0) {
+			const equalWeight = 100 / parsed.length;
+			parsed = parsed.map((item) => ({
+				...item,
+				weight: equalWeight,
+			}));
+		}
+
 		setResult(calculateGrade(parsed));
 	}
 
@@ -109,7 +115,6 @@ export default function GradeCalculatorPage() {
 						</p>
 					</div>
 
-					{/* Class Selector */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium text-gray-700 mb-1">
 							Load from Class (Optional)
@@ -218,8 +223,11 @@ export default function GradeCalculatorPage() {
 								>
 									{totalWeight}%
 								</span>
-								{totalWeight !== 100 && (
+								{totalWeight !== 100 && totalWeight > 0 && (
 									<span className="text-gray-400 ml-2 text-xs">(should equal 100%)</span>
+								)}
+								{totalWeight === 0 && items.length > 0 && (
+									<span className="text-gray-400 ml-2 text-xs">(all items weighted equally)</span>
 								)}
 							</div>
 
