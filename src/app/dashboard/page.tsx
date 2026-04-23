@@ -1,27 +1,37 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+
 import Sidebar from "@/components/Sidebar";
 import AISyllabusParser from "@/components/AISyllabusParser";
+import ManualClassForm from "@/components/ManualClassForm";
+
+import { addClass } from "@/lib/store";
 
 type ClassType = {
   className: string;
   teacher: string;
-  exams: any[];
-  assignments: any[];
-  quizzes: any[];
+  teacherEmail: string;
+  taName: string;
+  taEmail: string;
+  officeHours: {
+    time: string;
+    location: string;
+  };
 };
 
 export default function Dashboard() {
   const [classes, setClasses] = useState<ClassType[]>([]);
 
   function handleParsed(data: ClassType) {
+    addClass(data);
     setClasses((prev) => [...prev, data]);
   }
 
   return (
     <div className="min-h-screen flex bg-gradient-to-b from-white via-red-50 to-white">
-      
+
       <Sidebar />
 
       <div className="flex-1 p-6 max-w-5xl mx-auto">
@@ -39,17 +49,22 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold text-red-600 mb-3">
             Upload Syllabus (PDF)
           </h2>
+
           <AISyllabusParser onParsed={handleParsed} />
         </div>
 
-        {/* MANUAL INPUT (we'll build next) */}
+        {/* MANUAL INPUT */}
         <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-black mb-3">
             Or Enter Manually
           </h2>
-          <p className="text-sm text-gray-400">
-            (Manual form coming next)
-          </p>
+
+          <ManualClassForm
+            onAdd={(data: ClassType) => {
+              addClass(data);
+              setClasses((prev) => [...prev, data]);
+            }}
+          />
         </div>
 
         {/* CLASSES */}
@@ -60,17 +75,36 @@ export default function Dashboard() {
 
           {classes.length === 0 ? (
             <p className="text-gray-400 text-sm">
-              No classes yet. Upload a syllabus to get started.
+              No classes yet. Add one manually or upload a syllabus.
             </p>
           ) : (
             classes.map((c, i) => (
-              <div
+              <Link
                 key={i}
-                className="bg-white border rounded-2xl p-5 mb-3"
+                href={`/study-hub/${encodeURIComponent(c.className)}`}
               >
-                <h3 className="font-bold">{c.className}</h3>
-                <p className="text-sm text-gray-500">{c.teacher}</p>
-              </div>
+                <div className="bg-white border rounded-2xl p-5 mb-3 cursor-pointer hover:shadow-md transition">
+
+                  <h3 className="font-bold">{c.className}</h3>
+
+                  <p className="text-sm text-gray-500">
+                    Professor: {c.teacher}
+                  </p>
+
+                  <p className="text-xs text-gray-400">
+                    📧 {c.teacherEmail}
+                  </p>
+
+                  <p className="text-xs text-gray-400">
+                    TA: {c.taName} ({c.taEmail})
+                  </p>
+
+                  <p className="text-xs text-gray-400 mt-2">
+                    Office Hours: {c.officeHours.time} @ {c.officeHours.location}
+                  </p>
+
+                </div>
+              </Link>
             ))
           )}
         </div>
