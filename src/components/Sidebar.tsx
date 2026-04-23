@@ -5,7 +5,7 @@ export default function Sidebar() {
     <div className="w-64 bg-black text-white p-5 min-h-screen">
 
       <h2 className="text-red-500 font-bold mb-8 text-xl">
-        StudyAI
+        Syllabus Tracker
       </h2>
 
       <nav className="space-y-4 text-sm">
