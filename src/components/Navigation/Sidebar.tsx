@@ -1,24 +1,74 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { FiHome, FiPlusCircle, FiBarChart2, FiLogOut, FiCalendar } from "react-icons/fi";
 
 export default function Sidebar() {
-	return (
-		<div className="w-64 bg-black text-white p-5 min-h-screen">
-			<h2 className="text-red-500 font-bold mb-8 text-xl">Syllabus Tracker</h2>
+	const pathname = usePathname();
 
-			<nav className="space-y-4 text-sm">
-				<Link href="/dashboard" className="block hover:text-red-400">
-					Dashboard
+	const navItems = [
+		{ href: "/dashboard", label: "Dashboard", icon: FiHome },
+		{ href: "/add-class", label: "Add Class", icon: FiPlusCircle },
+		{ href: "/assignments", label: "All Assignments", icon: FiCalendar },
+		{ href: "/grade-calculator", label: "Grade Calculator", icon: FiBarChart2 },
+	];
+
+	const isActive = (href: string) => pathname === href;
+
+	return (
+		<aside className="fixed top-0 left-0 w-64 h-screen bg-black text-gray-300 flex flex-col border-r border-gray-800 overflow-y-auto">
+			{/* Logo / Brand - Now clickable */}
+			<div className="p-5 border-b border-gray-800 shrink-0">
+				<Link href="/dashboard" className="block">
+					<div className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+						<div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+							<span className="text-white font-bold text-xl">S</span>
+						</div>
+						<span className="text-white font-semibold text-lg tracking-tight">
+							Syllabus<span className="text-red-500">Tracker</span>
+						</span>
+					</div>
 				</Link>
-				<Link href="/add-class" className="block hover:text-red-400">
-					Add Classes
-				</Link>
-				<Link href="/grade-calculator" className="block hover:text-red-400">
-					Grade Calculator
-				</Link>
-				<Link href="/" className="block hover:text-red-400">
-					Logout
-				</Link>
+			</div>
+
+			{/* Navigation Links */}
+			<nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+				{navItems.map(({ href, label, icon: Icon }) => (
+					<Link
+						key={href}
+						href={href}
+						className={`
+              flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
+              ${
+					isActive(href)
+						? "bg-red-600 text-white shadow-md shadow-red-900/30"
+						: "text-gray-300 hover:bg-gray-800 hover:text-white"
+				}
+            `}
+					>
+						<Icon size={18} />
+						<span>{label}</span>
+					</Link>
+				))}
 			</nav>
-		</div>
+
+			{/* Footer: Logout button above user info */}
+			<div className="p-4 border-t border-gray-800 shrink-0">
+				<div className="flex items-center gap-3 mb-2">
+					<div className="w-9 h-9 rounded-full bg-linear-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-medium shrink-0">
+						JD
+					</div>
+					<div className="flex-1 min-w-0">
+						<p className="text-sm font-medium text-white truncate">John Doe</p>
+						<p className="text-xs text-gray-400 truncate">john@example.com</p>
+					</div>
+				</div>
+				<button className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg cursor-pointer transition">
+					<FiLogOut size={16} />
+					<span>Logout</span>
+				</button>
+			</div>
+		</aside>
 	);
 }

@@ -7,10 +7,13 @@ export type Exam = {
 export type Assignment = {
 	name: string;
 	weight: number;
+	dueDate?: string;
 };
 
 export type Quiz = {
+	name: string;
 	weight: number;
+	date?: string;
 };
 
 export type ClassType = {

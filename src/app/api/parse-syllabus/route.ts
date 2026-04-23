@@ -54,10 +54,10 @@ export async function POST(req: Request) {
           { "name": "", "date": "", "weight": 0 }
         ],
         "assignments": [
-          { "name": "", "weight": 0 }
+          { "name": "", "weight": 0, dueDate: "" }
         ],
         "quizzes": [
-          { "weight": 0 }
+          { "weight": 0, dueDate: "" }
         ],
         "officeHours": {
           "time": "",
