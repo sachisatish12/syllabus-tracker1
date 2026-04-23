@@ -7,7 +7,13 @@ export default function AISyllabusParser({ onParsed }: any) {
   const [loading, setLoading] = useState(false);
 
   async function handleUpload() {
-    if (!file) return;
+    console.log("UPLOAD CLICKED");
+    console.log("file at upload time:", file);
+
+    if (!file) {
+      console.log("No file selected");
+      return;
+    }
 
     setLoading(true);
 
@@ -20,13 +26,17 @@ export default function AISyllabusParser({ onParsed }: any) {
         body: formData,
       });
 
+      console.log("API status:", res.status);
+
       const data = await res.json();
+
+      console.log("API response:", data);
 
       onParsed(data);
 
       setFile(null);
     } catch (err) {
-      console.error(err);
+      console.error("Upload error:", err);
     }
 
     setLoading(false);
@@ -39,14 +49,18 @@ export default function AISyllabusParser({ onParsed }: any) {
       <input
         type="file"
         accept="application/pdf"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
+        onChange={(e) => {
+          const selectedFile = e.target.files?.[0];
+          console.log("Selected file:", selectedFile);
+          setFile(selectedFile || null);
+        }}
         className="w-full"
       />
 
       {/* button */}
       <button
         onClick={handleUpload}
-        disabled={!file || loading}
+        disabled={loading}
         className="w-full py-3 rounded-xl bg-black text-white hover:bg-red-600 transition"
       >
         {loading ? "Reading syllabus..." : "Upload & Parse PDF →"}
