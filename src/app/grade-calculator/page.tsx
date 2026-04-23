@@ -1,39 +1,101 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { calculateGrade } from "@/lib/grade";
 import Sidebar from "@/components/Navigation/Sidebar";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiDownload } from "react-icons/fi";
+import type { ClassType } from "@/lib/types";
+
+interface GradeItem {
+	name: string;
+	score: string;
+	weight: string;
+}
 
 export default function GradeCalculatorPage() {
-	const [assignments, setAssignments] = useState([{ name: "", score: "", weight: "" }]);
+	const [classes, setClasses] = useState<ClassType[]>([]);
+	const [selectedClass, setSelectedClass] = useState<string>("");
+	const [items, setItems] = useState<GradeItem[]>([{ name: "", score: "", weight: "" }]);
 	const [result, setResult] = useState<number | null>(null);
 
-	function handleChange(idx: number, field: string, value: string) {
-		const updated = assignments.map((a, i) => (i === idx ? { ...a, [field]: value } : a));
-		setAssignments(updated);
+	// Load classes from localStorage
+	useEffect(() => {
+		const stored = localStorage.getItem("classes");
+		if (stored) {
+			const parsed = JSON.parse(stored);
+			setClasses(parsed);
+		}
+	}, []);
+
+	// When a class is selected, populate items from that class
+	const handleClassSelect = (className: string) => {
+		setSelectedClass(className);
+		const targetClass = classes.find((c) => c.className === className);
+		if (!targetClass) return;
+
+		const newItems: GradeItem[] = [];
+
+		// Add exams
+		targetClass.exams.forEach((exam) => {
+			newItems.push({
+				name: exam.name || "Exam",
+				score: "",
+				weight: exam.weight.toString(),
+			});
+		});
+
+		// Add assignments
+		targetClass.assignments.forEach((assignment) => {
+			newItems.push({
+				name: assignment.name || "Assignment",
+				score: "",
+				weight: assignment.weight.toString(),
+			});
+		});
+
+		// Add quizzes
+		targetClass.quizzes.forEach((quiz) => {
+			newItems.push({
+				name: quiz.name || "Quiz",
+				score: "",
+				weight: quiz.weight.toString(),
+			});
+		});
+
+		// If no items, start with one empty row
+		if (newItems.length === 0) {
+			setItems([{ name: "", score: "", weight: "" }]);
+		} else {
+			setItems(newItems);
+		}
+		setResult(null);
+	};
+
+	function handleChange(idx: number, field: keyof GradeItem, value: string) {
+		const updated = items.map((item, i) => (i === idx ? { ...item, [field]: value } : item));
+		setItems(updated);
 	}
 
 	function addRow() {
-		setAssignments([...assignments, { name: "", score: "", weight: "" }]);
+		setItems([...items, { name: "", score: "", weight: "" }]);
 	}
 
 	function removeRow(idx: number) {
-		if (assignments.length === 1) return;
-		const updated = assignments.filter((_, i) => i !== idx);
-		setAssignments(updated);
+		if (items.length === 1) return;
+		const updated = items.filter((_, i) => i !== idx);
+		setItems(updated);
 	}
 
 	function calculate() {
-		const parsed = assignments.map((a) => ({
-			...a,
-			score: parseFloat(a.score) || 0,
-			weight: parseFloat(a.weight) || 0,
+		const parsed = items.map((item) => ({
+			name: item.name,
+			score: parseFloat(item.score) || 0,
+			weight: parseFloat(item.weight) || 0,
 		}));
 		setResult(calculateGrade(parsed));
 	}
 
-	const totalWeight = assignments.reduce((sum, a) => sum + (parseFloat(a.weight) || 0), 0);
+	const totalWeight = items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
 
 	return (
 		<div className="min-h-screen bg-gray-50">
@@ -43,8 +105,41 @@ export default function GradeCalculatorPage() {
 					<div className="mb-6">
 						<h1 className="text-3xl font-bold text-gray-900">Grade Calculator</h1>
 						<p className="text-gray-500 text-sm mt-1">
-							Calculate your final grade by entering your assignments and their weights.
+							Select a class to load its assignments, or enter items manually.
 						</p>
+					</div>
+
+					{/* Class Selector */}
+					<div className="mb-4">
+						<label className="block text-sm font-medium text-gray-700 mb-1">
+							Load from Class (Optional)
+						</label>
+						<div className="flex gap-3">
+							<select
+								value={selectedClass}
+								onChange={(e) => handleClassSelect(e.target.value)}
+								className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
+							>
+								<option value="">-- Select a class --</option>
+								{classes.map((cls) => (
+									<option key={cls.className} value={cls.className}>
+										{cls.className}
+									</option>
+								))}
+							</select>
+							{selectedClass && (
+								<button
+									onClick={() => {
+										setSelectedClass("");
+										setItems([{ name: "", score: "", weight: "" }]);
+										setResult(null);
+									}}
+									className="text-sm text-gray-500 hover:text-gray-700"
+								>
+									Clear
+								</button>
+							)}
+						</div>
 					</div>
 
 					<div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -52,30 +147,30 @@ export default function GradeCalculatorPage() {
 							<table className="w-full">
 								<thead>
 									<tr className="border-b border-gray-200">
-										<th className="text-left pb-3 text-sm font-medium text-gray-500">Assignment</th>
+										<th className="text-left pb-3 text-sm font-medium text-gray-500">Item</th>
 										<th className="text-left pb-3 text-sm font-medium text-gray-500">Score (%)</th>
 										<th className="text-left pb-3 text-sm font-medium text-gray-500">Weight (%)</th>
 										<th className="w-10"></th>
 									</tr>
 								</thead>
 								<tbody>
-									{assignments.map((a, idx) => (
+									{items.map((item, idx) => (
 										<tr key={idx} className="border-b border-gray-100 last:border-0">
 											<td className="py-3 pr-3">
 												<input
 													className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
-													value={a.name}
+													value={item.name}
 													onChange={(e) => handleChange(idx, "name", e.target.value)}
-													placeholder="e.g., Homework 1"
+													placeholder="e.g., Midterm"
 												/>
 											</td>
 											<td className="py-3 pr-3">
 												<input
 													className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
 													type="number"
-													value={a.score}
+													value={item.score}
 													onChange={(e) => handleChange(idx, "score", e.target.value)}
-													placeholder="95"
+													placeholder="85"
 													min="0"
 													max="100"
 												/>
@@ -84,7 +179,7 @@ export default function GradeCalculatorPage() {
 												<input
 													className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
 													type="number"
-													value={a.weight}
+													value={item.weight}
 													onChange={(e) => handleChange(idx, "weight", e.target.value)}
 													placeholder="20"
 													min="0"
@@ -94,7 +189,7 @@ export default function GradeCalculatorPage() {
 											<td className="py-3">
 												<button
 													onClick={() => removeRow(idx)}
-													disabled={assignments.length === 1}
+													disabled={items.length === 1}
 													className="p-2 text-gray-400 hover:text-red-500 disabled:opacity-30 disabled:hover:text-gray-400 transition"
 													title="Remove"
 												>
@@ -111,7 +206,7 @@ export default function GradeCalculatorPage() {
 								className="mt-4 flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium transition"
 							>
 								<FiPlus size={16} />
-								Add Assignment
+								Add Custom Item
 							</button>
 						</div>
 
