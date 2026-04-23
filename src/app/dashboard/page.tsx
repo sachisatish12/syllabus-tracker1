@@ -1,77 +1,78 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import AISyllabusParser from "@/components/AISyllabusParser";
-import ManualClassForm from "@/components/ManualClassForm";
-import { addClass } from "@/lib/store";
+import ClassCard from "@/components/ClassCard";
+import ClassModal from "@/components/ClassModal";
 import type { ClassType } from "@/lib/types";
 
 export default function Dashboard() {
 	const [classes, setClasses] = useState<ClassType[]>([]);
+	const [selectedClass, setSelectedClass] = useState<ClassType | null>(null);
+	const [isModalOpen, setIsModalOpen] = useState(false);
 
-	function handleParsed(data: ClassType) {
-		addClass(data);
-		setClasses((prev) => [...prev, data]);
-	}
+	useEffect(() => {
+		const stored = localStorage.getItem("classes");
+		if (stored) {
+			setClasses(JSON.parse(stored));
+		}
+	}, []);
+
+	const handleClassClick = (classData: ClassType) => {
+		setSelectedClass(classData);
+		setIsModalOpen(true);
+	};
+
+	const handleRemoveClass = (className: string) => {
+		const updated = classes.filter((c) => c.className !== className);
+		setClasses(updated);
+		localStorage.setItem("classes", JSON.stringify(updated));
+	};
 
 	return (
 		<div className="min-h-screen flex bg-linear-to-b from-white via-red-50 to-white">
 			<Sidebar />
-
 			<div className="flex-1 p-6 max-w-5xl mx-auto">
 				{/* HEADER */}
-				<div className="mb-6">
-					<h1 className="text-3xl font-bold text-black">Dashboard</h1>
-					<p className="text-gray-500 text-sm">Upload your syllabus or enter class details manually.</p>
-				</div>
-
-				{/* AI PARSER */}
-				<div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
-					<h2 className="text-lg font-semibold text-red-600 mb-3">Upload Syllabus (PDF)</h2>
-					<AISyllabusParser onParsed={handleParsed} />
-				</div>
-
-				{/* MANUAL INPUT */}
-				<div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
-					<h2 className="text-lg font-semibold text-black mb-3">Or Enter Manually</h2>
-					<ManualClassForm
-						onAdd={(data: ClassType) => {
-							addClass(data);
-							setClasses((prev) => [...prev, data]);
-						}}
-					/>
+				<div className="mb-6 flex items-center justify-between">
+					<div>
+						<h1 className="text-3xl font-bold text-black">Dashboard</h1>
+						<p className="text-gray-500 text-sm">View all your classes below.</p>
+					</div>
+					<Link
+						href="/add-class"
+						className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+					>
+						Add Class
+					</Link>
 				</div>
 
 				{/* CLASSES */}
 				<div>
 					<h2 className="text-lg font-semibold text-black mb-3">Your Classes</h2>
-
 					{classes.length === 0 ? (
-						<p className="text-gray-400 text-sm">No classes yet. Add one manually or upload a syllabus.</p>
+						<p className="text-gray-400 text-sm">No classes yet. Click "Add Class" to get started.</p>
 					) : (
-						classes.map((c, i) => (
-							<Link key={i} href={`/study-hub/${encodeURIComponent(c.className)}`}>
-								<div className="bg-white border rounded-2xl p-5 mb-3 cursor-pointer hover:shadow-md transition">
-									<h3 className="font-bold">{c.className}</h3>
-
-									<p className="text-sm text-gray-500">Professor: {c.teacherName}</p>
-
-									<p className="text-xs text-gray-400">📧 {c.teacherEmail}</p>
-
-									<p className="text-xs text-gray-400">
-										TA: {c.taName} ({c.taEmail})
-									</p>
-
-									<p className="text-xs text-gray-400 mt-2">
-										Office Hours: {c.officeHours.time} @ {c.officeHours.location}
-									</p>
+						<div className="space-y-3">
+							{classes.map((c) => (
+								<div key={c.className} onClick={() => handleClassClick(c)} className="cursor-pointer">
+									<ClassCard classData={c} />
 								</div>
-							</Link>
-						))
+							))}
+						</div>
 					)}
 				</div>
+
+				{/* MODAL */}
+				{selectedClass && (
+					<ClassModal
+						classData={selectedClass}
+						isOpen={isModalOpen}
+						onClose={() => setIsModalOpen(false)}
+						onRemove={handleRemoveClass}
+					/>
+				)}
 			</div>
 		</div>
 	);
