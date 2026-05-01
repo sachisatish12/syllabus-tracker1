@@ -1,23 +1,20 @@
 import { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { connectDB } from "./db";
+import User from "./models/User";
+import bcrypt from "bcryptjs";
 
-// ⚠️ Replace this with your actual DB logic
-// For demo purposes (SO YOUR PRESENTATION WORKS), this fallback is included
-async function authenticateUser(username: string, password: string) {
-  // 👉 TEMP DEMO USER (you can log in with this)
-  if (username === "demo" && password === "demo123") {
-    return {
-      _id: "1",
-      username: "demo",
-      email: "demo@sylabus.com",
-      role: "user",
-    };
-  }
+async function authenticateUser(email: string, password: string) {
+  await connectDB();
 
+  const user = await User.findOne({ email });
+  if (!user) return null;
 
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid) return null;
 
-  return null;
+  return user;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -25,33 +22,28 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
 
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
+        if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        try {
-          const user = await authenticateUser(
-            credentials.username,
-            credentials.password
-          );
+        const user = await authenticateUser(
+          credentials.email,
+          credentials.password
+        );
 
-          if (!user) return null;
+        if (!user) return null;
 
-          return {
-            id: user._id,
-            name: user.username,
-            email: user.email,
-            role: user.role,
-          };
-        } catch (error) {
-          console.error("Auth error:", error);
-          return null;
-        }
+        return {
+          id: user._id.toString(),
+          name: user.username,
+          email: user.email,
+          role: user.role,
+        };
       },
     }),
   ],
@@ -59,7 +51,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = (user as any).id;
         token.role = (user as any).role;
         token.name = user.name;
       }
@@ -68,12 +60,15 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        session.user.name = token.name;
+        const user = session.user as any;
+        
+        user.id = token.id as string;
+        user.role = token.role as string;
+        user.name = token.name as string;
       }
+      
       return session;
-    },
+    }
   },
 
   pages: {
