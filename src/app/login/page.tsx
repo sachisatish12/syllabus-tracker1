@@ -7,7 +7,6 @@ import Image from "next/image";
 
 export default function Login() {
   const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,7 +17,7 @@ export default function Login() {
     setLoading(true);
 
     const result = await signIn("credentials", {
-      username: email, // IMPORTANT: matches your backend (username field)
+      email,
       password,
       redirect: false,
     });
@@ -60,7 +59,7 @@ export default function Login() {
         <div className="space-y-3">
           <input
             className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500"
-            placeholder="Email / Username"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />

@@ -12,31 +12,53 @@ export default function AddClass() {
 	const router = useRouter();
 	const [modalData, setModalData] = useState<ClassType | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState("");
 
-	function saveClass(classData: ClassType) {
-		const existing = JSON.parse(localStorage.getItem("classes") || "[]");
-		const updated = [...existing, classData];
-		localStorage.setItem("classes", JSON.stringify(updated));
-		router.push("/dashboard");
-	}
+  	async function saveClass(classData: ClassType) {
+    	setLoading(true);
+    	setError("");
 
-	function handlePreview(data: ClassType) {
-		setModalData(data);
-		setIsModalOpen(true);
-	}
+    	try {
+      	const res = await fetch("/api/classes", {
+  			method: "POST",
+  			headers: { "Content-Type": "application/json" },
+  			body: JSON.stringify(classData),
+  			credentials: "include",
+		});
 
-	function handleConfirm(updatedData: ClassType) {
-		saveClass(updatedData);
-		setIsModalOpen(false);
-		setModalData(null);
-	}
+      	if (!res.ok) {
+        	const data = await res.json();
+        	throw new Error(data.error || "Failed to save class");
+      	}
 
-	function handleCloseModal() {
-		setIsModalOpen(false);
-		setModalData(null);
-	}
+      	router.push("/dashboard");
+    	}
+		catch (err: any) {
+      	setError(err.message);
+    	}
+		finally {
+      	setLoading(false);
+    	}
+  	}
 
-	return (
+  	function handlePreview(data: ClassType) {
+    	setModalData(data);
+    	setIsModalOpen(true);
+  	}
+
+  	function handleConfirm(updatedData: ClassType) {
+    	saveClass(updatedData);
+    	setIsModalOpen(false);
+    	setModalData(null);
+  	}
+
+  	function handleCloseModal() {
+    	setIsModalOpen(false);
+    	setModalData(null);
+  	}
+
+  	return (
 		<div className="min-h-screen flex bg-white">
 			<Sidebar />
 			<div className="flex-1 p-6 max-w-2xl mx-auto">

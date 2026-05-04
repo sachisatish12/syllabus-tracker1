@@ -10,10 +10,23 @@ import type { ClassType } from "@/lib/types";
 
 export default function Dashboard() {
 	const [classes, setClasses] = useState<ClassType[]>([]);
-	const [selectedClass, setSelectedClass] = useState<ClassType | null>(null);
-	const [editingClass, setEditingClass] = useState<ClassType | null>(null);
-	const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  	const [selectedClass, setSelectedClass] = useState<ClassType | null>(null);
+  	const [editingClass, setEditingClass] = useState<ClassType | null>(null);
+  	const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  	useEffect(() => {
+    	async function fetchClasses() {
+			const res = await fetch("/api/classes", {
+  			method: "GET",
+  			credentials: "include",
+			});
+      		if (!res.ok) return;
+      		const data = await res.json();
+      		setClasses(data);
+    	}
+		fetchClasses();
+  	}, []);
 
 	useEffect(() => {
 		const stored = localStorage.getItem("classes");
@@ -37,15 +50,28 @@ export default function Dashboard() {
 		setIsEditModalOpen(true);
 	};
 
-	const handleRemove = (className: string) => {
-		const updated = classes.filter((c) => c.className !== className);
-		saveClasses(updated);
-	};
+	const handleRemove = async (id: string) => {
+    	const res = await fetch('/api/classes/${id}', {
+  			method: "DELETE",
+  			credentials: "include",
+		});;
+		if (!res.ok) return;
+		setClasses((prev) => prev.filter((c) => c._id !== id));
+  	};
 
-	const handleSaveEdit = (updatedClass: ClassType) => {
-		const updated = classes.map((c) => (c.className === editingClass?.className ? updatedClass : c));
-		saveClasses(updated);
-	};
+	const handleSaveEdit = async (updatedClass: ClassType) => {
+		const res = await fetch(`/api/classes/${updatedClass._id}`, {
+  			method: "PUT",
+  			headers: { "Content-Type": "application/json" },
+  			body: JSON.stringify(updatedClass),
+  			credentials: "include",
+		});
+		if (!res.ok) return;
+		
+		setClasses((prev) =>
+			prev.map((c) => (c._id === updatedClass._id ? updatedClass : c))
+		);
+  	};
 
 	return (
 		<div className="min-h-screen flex bg-linear-to-b from-white via-red-50 to-white">

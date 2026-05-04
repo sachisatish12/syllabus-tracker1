@@ -17,6 +17,7 @@ export type Quiz = {
 };
 
 export type ClassType = {
+	_id?: string;
 	className: string;
 	teacherName: string;
 	teacherEmail: string;
@@ -30,3 +31,18 @@ export type ClassType = {
 	taName: string;
 	taEmail: string;
 };
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
+  }
+
+  interface User {
+    id: string;
+  }
+}

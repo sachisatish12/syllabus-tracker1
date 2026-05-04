@@ -1,23 +1,10 @@
-import { NextAuthOptions } from "next-auth";
-import { getServerSession } from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectDB } from "./db";
-import User from "./models/User";
 import bcrypt from "bcryptjs";
+import User from "./models/User";
+import { connectDB } from "./db";
 
-async function authenticateUser(email: string, password: string) {
-  await connectDB();
-
-  const user = await User.findOne({ email });
-  if (!user) return null;
-
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) return null;
-
-  return user;
-}
-
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -25,68 +12,37 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        const user = await authenticateUser(
-          credentials.email,
-          credentials.password
-        );
-
-        if (!user) return null;
-
-        return {
-          id: user._id.toString(),
-          name: user.username,
-          email: user.email,
-          role: user.role,
-        };
+        await connectDB();
+        const user = await User.findOne({ email: credentials?.email });
+        if (!user) throw new Error("No user found");
+        const isValid = await bcrypt.compare(credentials!.password, user.password);
+        if (!isValid) throw new Error("Invalid password");
+        return { id: user._id.toString(), email: user.email, name: user.name };
       },
     }),
   ],
-
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.name = user.name;
-      }
-      return token;
-    },
-
-    async session({ session, token }) {
-      if (session.user) {
-        const user = session.user as any;
-        
-        user.id = token.id as string;
-        user.role = token.role as string;
-        user.name = token.name as string;
-      }
-      
-      return session;
-    }
-  },
-
-  pages: {
-    signIn: "/login",
-  },
-
   session: {
     strategy: "jwt",
   },
-
+  callbacks: {
+    // Attach user.id to the JWT token
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    // Attach user.id from JWT to session.user
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
+  },
+  pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export async function getSession() {
-  return await getServerSession(authOptions);
-}
-
-export async function getCurrentUser() {
-  const session = await getSession();
-  return session?.user;
-}
+export default NextAuth(authOptions);

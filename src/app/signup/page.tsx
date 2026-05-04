@@ -6,7 +6,6 @@ import { signIn } from "next-auth/react";
 
 export default function Signup() {
   const router = useRouter();
-
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,28 +16,26 @@ export default function Signup() {
     setError("");
     setLoading(true);
 
-    const res = await fetch("/api/users/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password }),
-    });
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: username, email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Signup failed");
 
-    if (!res.ok) {
-      setError(data.error || "Signup failed");
-      setLoading(false);
-      return;
+      await signIn("credentials", { email, password, redirect: false });
+
+      router.push("/dashboard");
     }
-
-    // auto login
-    await signIn("credentials", {
-      username,
-      password,
-      redirect: false,
-    });
-
-    router.push("/dashboard");
+    catch (err: any) {
+      setError(err.message);
+    }
+    finally {
+      setLoading(false);
+    }
   }
 
   return (

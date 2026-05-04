@@ -1,47 +1,85 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { connectDB } from "@/lib/db";
+import ClassModel, { IClass } from "@/lib/models/Class";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-import { connectDB } from "@/lib/db";
-import Class from "@/lib/models/Class";
+export async function GET() {
+  await connectDB();
 
-export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-
-  const userId = (session?.user as any)?.id;
-
-  if (!userId) {
+  if (!session || !session.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await connectDB();
-
-  const body = await req.json();
-
-  const newClass = await Class.create({
-    userId,
-    name: body.name,
-    professor: body.professor,
-    assignments: [],
-  });
-
-  return NextResponse.json(newClass);
+  const classes = await ClassModel.find({ userId: session.user.id });
+  return NextResponse.json(classes);
 }
 
-export async function GET() {
+export async function POST(req: Request) {
+  await connectDB();
+
   const session = await getServerSession(authOptions);
-
-  const userId = (session?.user as any)?.id;
-
-  if (!userId) {
+  if (!session || !session.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const body = await req.json();
+  const newClass: Partial<IClass> = {
+    userId: session.user.id,
+    className: body.className,
+    instructor: body.instructor,
+    exams: body.exams || [],
+    assignments: body.assignments || [],
+    quizzes: body.quizzes || [],
+  };
+
+  const created = await ClassModel.create(newClass);
+  return NextResponse.json(created);
+}
+
+export async function PUT(req: Request) {
   await connectDB();
 
-  const classes = await Class.find({
-    userId,
-  });
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  return NextResponse.json(classes);
+  const body = await req.json();
+  const { _id, ...rest } = body;
+
+  const updated = await ClassModel.findOneAndUpdate(
+    { _id, userId: session.user.id },
+    rest,
+    { new: true }
+  );
+
+  if (!updated) {
+    return NextResponse.json({ error: "Class not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(req: Request) {
+  await connectDB();
+
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const id = url.searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "Missing class ID" }, { status: 400 });
+  }
+
+  const deleted = await ClassModel.findOneAndDelete({ _id: id, userId: session.user.id });
+  if (!deleted) {
+    return NextResponse.json({ error: "Class not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
 }
