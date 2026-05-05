@@ -11,7 +11,14 @@ export interface Item {
 export interface IClass {
     userId: string;
     className: string;
-    instructor?: string;
+    teacherName?: string;
+    teacherEmail?: string;
+    officeHours?: {
+        time: string;
+        location: string;
+    };
+    taName?: string;
+    taEmail?: string;
     exams: Item[];
     assignments: Item[];
     quizzes: Item[];
@@ -29,7 +36,18 @@ const ClassSchema = new Schema<IClass>(
     {
         userId: { type: String, required: true },
         className: { type: String, required: true },
-        instructor: String,
+
+        teacherName: String,
+        teacherEmail: String,
+
+        officeHours: {
+            time: String,
+            location: String
+        },
+
+        taName: String,
+        taEmail: String,
+
         exams: [ItemSchema],
         assignments: [ItemSchema],
         quizzes: [ItemSchema],

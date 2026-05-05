@@ -16,21 +16,22 @@ export type Quiz = {
 	date?: string;
 };
 
-export type ClassType = {
-	_id?: string;
-	className: string;
-	teacherName: string;
-	teacherEmail: string;
-	exams: Exam[];
-	assignments: Assignment[];
-	quizzes: Quiz[];
-	officeHours: {
-		time: string;
-		location: string;
-	};
-	taName: string;
-	taEmail: string;
-};
+export interface ClassType {
+  _id: string;
+  userId: string;
+  className: string;
+  teacherName?: string;
+  teacherEmail?: string;
+  officeHours?: {
+    time: string;
+    location: string;
+  };
+  taName?: string;
+  taEmail?: string;
+  exams: Exam[];
+  assignments: Assignment[];
+  quizzes: Quiz[];
+}
 
 declare module "next-auth" {
   interface Session {

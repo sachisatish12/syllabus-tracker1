@@ -97,7 +97,7 @@ export default function Dashboard() {
 					) : (
 						<div className="space-y-3">
 							{classes.map((c) => (
-								<div key={c.className}>
+								<div key={c._id}>
 									<ClassCard
 										classData={c}
 										onClick={handleClassClick}

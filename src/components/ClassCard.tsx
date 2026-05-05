@@ -77,7 +77,9 @@ export default function ClassCard({ classData, onEdit, onRemove, onClick }: Prop
 				<div className="flex items-start gap-2 text-xs text-gray-500">
 					<FiClock className="text-gray-400 shrink-0 mt-0.5" size={12} />
 					<span>
-						{classData.officeHours.time} @ {classData.officeHours.location}
+						{classData.officeHours
+  						? `${classData.officeHours.time} @ ${classData.officeHours.location}`
+  						: "Office hours not set"}
 					</span>
 				</div>
 			</div>
